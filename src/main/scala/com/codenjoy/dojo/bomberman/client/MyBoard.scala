@@ -114,11 +114,6 @@ class MyBoard extends AbstractBoard[Elements] {
     case Nil => None
     case a@_ => Some(a.minBy(getDistanceToPoint(from, _)))
   }
-
-  def meatChoppersWithPossibleDirections = ???
-
-
-
 }
 
 case class BombWithBlasts(bombLocation: Point, possibleBlasts: Set[Point], timeToBlast: Int)

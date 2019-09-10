@@ -32,7 +32,7 @@ import static org.mockito.Mockito.mock;
 
 public class SolverTest {
 
-    private Dice dice = mock(Dice.class);
+    /*private Dice dice = mock(Dice.class);
     private final YourSolver solver = new YourSolver(dice);
 
     private void assertB(String board, Direction direction) {
@@ -57,6 +57,6 @@ public class SolverTest {
                 "☼ #   #  &    ☼" +
                 "☼☼☼☼☼☼☼☼☼☼☼☼☼☼☼",
                 Direction.ACT);
-    }
+    }*/
 
 }
