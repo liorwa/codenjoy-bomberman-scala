@@ -26,6 +26,9 @@ class MyBoard extends AbstractBoard[Elements] {
 
   def getImpassable: Set[Point] = getMeatChoppers ++ getWalls ++ getBombs ++ getDestroyableWalls ++ getOtherBombermans
 
+  def getImpassableBlocks: Set[Point] = getMeatChoppers ++ getWalls ++ getBombs ++ getDestroyableWalls
+
+  def createPoint(x: Int, y: Int): Point = pt(x, y)
 
   //use this method as debug info - prints board information to the console
   override def toString: String =
@@ -73,46 +76,91 @@ class MyBoard extends AbstractBoard[Elements] {
 
   def getFutureBlasts: Set[Point] =
     getBombs.flatMap(bomb => getFutureBlasts(bomb))
- 
+
   def getFutureBlasts(bomb: Point): Set[Point] =
     addPointNeighbours(bomb) ++ Set(bomb)
 
 
-  def isBarrierAt(x: Int, y: Int): Boolean = getImpassable.contains(pt(x, y))
+  def isBarrierAt(x: Int, y: Int): Boolean = getImpassableBlocks.contains(pt(x, y))
 
   def isBarrierAt(point: Point): Boolean = isBarrierAt(point.getX, point.getY)
 
-  def nextMoveToPoint(from: Point, to: Point): Option[Direction] = closestPathToPoint(from ,to).flatMap(_.headOption)
+  def nextMoveToPoint(from: Point, to: Point): Option[Direction] = closestPathToPoint(from, to).flatMap(_.headOption)
+
+  def tooFarFromPoint(from: Point, to: Point, point: Point): Boolean = {
+    val fromX = from.getX
+    val fromY = from.getY
+    val toX = to.getX
+    val toY = to.getY
+    val pointX = point.getX
+    val pointY = point.getY
+    (pointX < Math.min(fromX, toX) - 5 || pointX > Math.max(fromX, toX) + 5 ||
+      pointY < Math.min(fromY, toY) - 5 || pointY > Math.max(fromY, toY) + 5)
+  }
 
   def closestPathToPoint(from: Point, to: Point): Option[Seq[Direction]] = {
-    def bfs(accum: Seq[Direction], visited: Set[Point], current: Point): Option[Seq[Direction]] = {
-      if (current == to) Some(accum)
-      else {
-        Try{Direction.onlyDirections().asScala.map(direction => {
-          val newX = direction.changeX(current.getX)
-          val newY = direction.changeX(current.getY)
-          val newPoint = pt(newX, newY)
-          if (!isBarrierAt(newPoint) && !visited.contains(newPoint))
-            bfs(accum ++ Seq(direction), visited ++ Set(newPoint), newPoint).getOrElse(Seq.empty)
-          else Seq.empty
-        }).filter(_ != Seq.empty).minBy(_.size)}.toOption
+    def bfs(from: Point, to: Point): Option[Seq[Direction]] = {
+      var visited: Set[Point] = Set(from)
+      var queue: List[(Point, Seq[Direction])] = List(from -> Seq.empty)
+      var h = 0
+      var t = 1
+      while (h < t && queue(h)._1 != to) {
+        val currentPoint = queue(h)._1
+        val currentDirections = queue(h)._2
+        h += 1
+        val newPoints: Seq[(Point, Direction)] = Direction.onlyDirections().asScala.map(direction => {
+          val newX = direction.changeX(currentPoint.getX)
+          val newY = direction.changeY(currentPoint.getY)
+          pt(newX, newY) -> direction
+        })
+        /*println(
+          s"""
+             |currentPoint = $currentPoint
+             |finish = $to
+             |newPoints = $newPoints
+             |visited = $visited
+             |filteredNewPoints = ${newPoints.filter(newPoint => !isBarrierAt(newPoint._1) && !visited.contains(newPoint._1) && !tooFarFromPoint(from, to, newPoint._1))}
+            """.stripMargin)*/
+        newPoints
+          .filter(newPoint => !isBarrierAt(newPoint._1) && !visited.contains(newPoint._1) && !tooFarFromPoint(from, to, newPoint._1))
+          .foreach(point => {
+            queue = queue.:+(point._1 -> (currentDirections ++ Seq(point._2)))
+            visited ++= Set(point._1)
+            t += 1
+          })
       }
+      if (h < queue.length && queue(h)._1 == to) Some(queue(h)._2)
+      else None
     }
-    bfs(Seq.empty, Set(from), from)
+
+    val res = bfs(from, to)
+    //println(s"from $from to $to path is $res")
+    res
   }
 
   def getBlastWithBombAndTimer: Seq[BombWithBlasts] = getBombs.map(b => BombWithBlasts(b, addPointNeighbours(b), getAt(b).ch() - '0')).toSeq
 
-  def getDistanceToPoint(from: Point, to: Point): Int = closestPathToPoint(from, to).size
+  def getEuclideanDistanceToPoint(from: Point, to: Point): Int =
+    Math.abs(from.getX - to.getX) + Math.abs(from.getY - to.getY)
 
   def getNearestBomberman(from: Point): Option[Point] = getOtherBombermans.toSeq match {
     case Nil => None
-    case a@_ => Some(a.minBy(getDistanceToPoint(from, _)))
+    case a@_ => Some(a.minBy(getEuclideanDistanceToPoint(from, _)))
   }
+
 
   def getNearestMeatChopper(from: Point): Option[Point] = getMeatChoppers.toSeq match {
     case Nil => None
-    case a@_ => Some(a.minBy(getDistanceToPoint(from, _)))
+    case a@_ => Some(a.minBy(getEuclideanDistanceToPoint(from, _)))
+  }
+
+  def movePoint(x: Int, y: Int, point: Point): Point = createPoint(point.getX + x, point.getY + y)
+
+  def movePoint(d: Direction, point: Point): Point = d match {
+    case Direction.DOWN => createPoint(point.getX, point.getY + 1)
+    case Direction.LEFT => createPoint(point.getX - 1, point.getY)
+    case Direction.UP => createPoint(point.getX, point.getY - 1)
+    case Direction.RIGHT => createPoint(point.getX + 1, point.getY)
   }
 }
 
