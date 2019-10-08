@@ -67,7 +67,6 @@ class MyBoard extends AbstractBoard[Elements] {
 
   def getBlasts: util.Collection[Point] = get(BOOM)
 
-  //todo remove blocked neighbours
   def addPointNeighbours(point: Point, length: Int = 3): Set[Point] =
     (1 to length).flatMap(i => Set(
       pt(point.getX - i, point.getY),
