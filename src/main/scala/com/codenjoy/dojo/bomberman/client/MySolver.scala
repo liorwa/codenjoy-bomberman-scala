@@ -5,20 +5,27 @@ import com.codenjoy.dojo.client.{Solver, WebSocketRunner}
 class MySolver extends Solver[MyBoard] {
   var ticks: Int = 0
 
+  /*
+      Implement your logic here
+   */
+  def nextMove: Action = {
+    Action(Right, BombBeforeMove)
+  }
+
   override def get(b: MyBoard): String = {
-    "ACT"
+    nextMove.toString
   }
 }
 
 object Main extends App {
 
-  def email = "ol@gmail.com"
+  def secret = "3esw4i2sdvjhznqzakld"
 
-  def code = "541537394769019901"
+  def code = "2616916371621770637"
 
   def url = "18.217.205.144:8080"
 
   override def main(args: Array[String]): Unit = {
-    WebSocketRunner.runClient(s"http://$url/codenjoy-contest/board/player/$email?code=$code", new MySolver, new MyBoard)
+    WebSocketRunner.runClient(s"http://$url/codenjoy-contest/board/player/$secret?code=$code", new MySolver, new MyBoard)
   }
 }

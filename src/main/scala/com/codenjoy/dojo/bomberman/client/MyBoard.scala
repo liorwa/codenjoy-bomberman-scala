@@ -9,9 +9,14 @@ import com.codenjoy.dojo.services.{Direction, Point}
 import com.codenjoy.dojo.services.PointImpl.pt
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 class MyBoard extends AbstractBoard[Elements] {
+
+  import Helpers._
+
+  def isBarrierAt(x: Int, y: Int): Boolean = getImpassableBlocks.contains(pt(x, y))
+
+  def isBarrierAt(point: Point): Boolean = isBarrierAt(point.getX, point.getY)
 
   override def valueOf(c: Char): Elements = Elements.valueOf(c)
 
@@ -27,8 +32,6 @@ class MyBoard extends AbstractBoard[Elements] {
   def getImpassable: Set[Point] = getMeatChoppers ++ getWalls ++ getBombs ++ getDestroyableWalls ++ getOtherBombermans
 
   def getImpassableBlocks: Set[Point] = getMeatChoppers ++ getWalls ++ getBombs ++ getDestroyableWalls
-
-  def createPoint(x: Int, y: Int): Point = pt(x, y)
 
   //use this method as debug info - prints board information to the console
   override def toString: String =
@@ -80,23 +83,22 @@ class MyBoard extends AbstractBoard[Elements] {
   def getFutureBlasts(bomb: Point): Set[Point] =
     addPointNeighbours(bomb) ++ Set(bomb)
 
+  def getBlastWithBombAndTimer: Seq[BombWithBlasts] = getBombs.map(b => BombWithBlasts(b, addPointNeighbours(b), getAt(b).ch() - '0')).toSeq
 
-  def isBarrierAt(x: Int, y: Int): Boolean = getImpassableBlocks.contains(pt(x, y))
+  def getEuclideanDistanceToPoint(from: Point, to: Point): Int =
+    Math.abs(from.getX - to.getX) + Math.abs(from.getY - to.getY)
 
-  def isBarrierAt(point: Point): Boolean = isBarrierAt(point.getX, point.getY)
+  def getNearestBomberman(from: Point): Option[Point] = getOtherBombermans.toSeq match {
+    case Nil => None
+    case a@_ => Some(a.minBy(getEuclideanDistanceToPoint(from, _)))
+  }
+
+  def getNearestMeatChopper(from: Point): Option[Point] = getMeatChoppers.toSeq match {
+    case Nil => None
+    case a@_ => Some(a.minBy(getEuclideanDistanceToPoint(from, _)))
+  }
 
   def nextMoveToPoint(from: Point, to: Point): Option[Direction] = closestPathToPoint(from, to).flatMap(_.headOption)
-
-  def tooFarFromPoint(from: Point, to: Point, point: Point): Boolean = {
-    val fromX = from.getX
-    val fromY = from.getY
-    val toX = to.getX
-    val toY = to.getY
-    val pointX = point.getX
-    val pointY = point.getY
-    (pointX < Math.min(fromX, toX) - 5 || pointX > Math.max(fromX, toX) + 5 ||
-      pointY < Math.min(fromY, toY) - 5 || pointY > Math.max(fromY, toY) + 5)
-  }
 
   def closestPathToPoint(from: Point, to: Point): Option[Seq[Direction]] = {
     def bfs(from: Point, to: Point): Option[Seq[Direction]] = {
@@ -113,14 +115,6 @@ class MyBoard extends AbstractBoard[Elements] {
           val newY = direction.changeY(currentPoint.getY)
           pt(newX, newY) -> direction
         })
-        /*println(
-          s"""
-             |currentPoint = $currentPoint
-             |finish = $to
-             |newPoints = $newPoints
-             |visited = $visited
-             |filteredNewPoints = ${newPoints.filter(newPoint => !isBarrierAt(newPoint._1) && !visited.contains(newPoint._1) && !tooFarFromPoint(from, to, newPoint._1))}
-            """.stripMargin)*/
         newPoints
           .filter(newPoint => !isBarrierAt(newPoint._1) && !visited.contains(newPoint._1) && !tooFarFromPoint(from, to, newPoint._1))
           .foreach(point => {
@@ -137,22 +131,10 @@ class MyBoard extends AbstractBoard[Elements] {
     //println(s"from $from to $to path is $res")
     res
   }
+}
 
-  def getBlastWithBombAndTimer: Seq[BombWithBlasts] = getBombs.map(b => BombWithBlasts(b, addPointNeighbours(b), getAt(b).ch() - '0')).toSeq
-
-  def getEuclideanDistanceToPoint(from: Point, to: Point): Int =
-    Math.abs(from.getX - to.getX) + Math.abs(from.getY - to.getY)
-
-  def getNearestBomberman(from: Point): Option[Point] = getOtherBombermans.toSeq match {
-    case Nil => None
-    case a@_ => Some(a.minBy(getEuclideanDistanceToPoint(from, _)))
-  }
-
-
-  def getNearestMeatChopper(from: Point): Option[Point] = getMeatChoppers.toSeq match {
-    case Nil => None
-    case a@_ => Some(a.minBy(getEuclideanDistanceToPoint(from, _)))
-  }
+//todo: move helpers to helpers
+object Helpers {
 
   def movePoint(x: Int, y: Int, point: Point): Point = createPoint(point.getX + x, point.getY + y)
 
@@ -162,6 +144,20 @@ class MyBoard extends AbstractBoard[Elements] {
     case Direction.UP => createPoint(point.getX, point.getY - 1)
     case Direction.RIGHT => createPoint(point.getX + 1, point.getY)
   }
+
+  def createPoint(x: Int, y: Int): Point = pt(x, y)
+
+  def tooFarFromPoint(from: Point, to: Point, point: Point): Boolean = {
+    val fromX = from.getX
+    val fromY = from.getY
+    val toX = to.getX
+    val toY = to.getY
+    val pointX = point.getX
+    val pointY = point.getY
+    (pointX < Math.min(fromX, toX) - 5 || pointX > Math.max(fromX, toX) + 5 ||
+      pointY < Math.min(fromY, toY) - 5 || pointY > Math.max(fromY, toY) + 5)
+  }
 }
 
 case class BombWithBlasts(bombLocation: Point, possibleBlasts: Set[Point], timeToBlast: Int)
+
