@@ -26,7 +26,7 @@ case object NoBomb extends Bomb
 case object BombBeforeMove extends Bomb
 case object BombAfterMove extends Bomb
 
-case class Action(move: Move, bomb: Bomb) {
+case class Action(move: Move, bomb: Bomb = NoBomb) {
   override def toString: String = {
     bomb match {
       case NoBomb => move.toString

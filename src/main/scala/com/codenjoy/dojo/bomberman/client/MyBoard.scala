@@ -100,6 +100,17 @@ class MyBoard extends AbstractBoard[Elements] {
   def nextMoveToPoint(from: Point, to: Point): Option[Direction] = closestPathToPoint(from, to).flatMap(_.headOption)
 
   def closestPathToPoint(from: Point, to: Point): Option[Seq[Direction]] = {
+    def tooFarFromPoint(from: Point, to: Point, point: Point): Boolean = {
+      val fromX = from.getX
+      val fromY = from.getY
+      val toX = to.getX
+      val toY = to.getY
+      val pointX = point.getX
+      val pointY = point.getY
+      pointX < Math.min(fromX, toX) - 5 || pointX > Math.max(fromX, toX) + 5 ||
+        pointY < Math.min(fromY, toY) - 5 || pointY > Math.max(fromY, toY) + 5
+    }
+
     def bfs(from: Point, to: Point): Option[Seq[Direction]] = {
       var visited: Set[Point] = Set(from)
       var queue: List[(Point, Seq[Direction])] = List(from -> Seq.empty)
@@ -127,12 +138,10 @@ class MyBoard extends AbstractBoard[Elements] {
     }
 
     val res = bfs(from, to)
-    //println(s"from $from to $to path is $res")
     res
   }
 }
 
-//todo: move helpers to helpers
 object Helpers {
 
   def movePoint(x: Int, y: Int, point: Point): Point = createPoint(point.getX + x, point.getY + y)
@@ -146,16 +155,6 @@ object Helpers {
 
   def createPoint(x: Int, y: Int): Point = pt(x, y)
 
-  def tooFarFromPoint(from: Point, to: Point, point: Point): Boolean = {
-    val fromX = from.getX
-    val fromY = from.getY
-    val toX = to.getX
-    val toY = to.getY
-    val pointX = point.getX
-    val pointY = point.getY
-    (pointX < Math.min(fromX, toX) - 5 || pointX > Math.max(fromX, toX) + 5 ||
-      pointY < Math.min(fromY, toY) - 5 || pointY > Math.max(fromY, toY) + 5)
-  }
 }
 
 case class BombWithBlasts(bombLocation: Point, possibleBlasts: Set[Point], timeToBlast: Int)

@@ -5,16 +5,16 @@ import com.codenjoy.dojo.client.{Solver, WebSocketRunner}
 class MySolver extends Solver[MyBoard] {
   var ticks: Int = 0
 
-  /*
-      Implement your logic here
-   */
-  def nextMove: Action = {
-    Action(Right, BombBeforeMove)
-  }
-
   override def get(b: MyBoard): String = {
     nextMove.toString
   }
+
+  /*
+      Implement your logic here
+   */
+  def nextMove: Action =
+    Action(Right, BombBeforeMove)
+
 }
 
 object Main extends App {
