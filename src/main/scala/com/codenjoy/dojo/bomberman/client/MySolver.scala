@@ -4,7 +4,7 @@ import com.codenjoy.dojo.client.{Solver, WebSocketRunner}
 import com.codenjoy.dojo.services.{Direction, Point, PointImpl}
 
 class MySolver extends Solver[MyBoard] {
-  val MIN_DIST_TO_VICTIM = 3
+  val MIN_DIST_TO_VICTIM = 4
   var ticks: Int = 0
 
   override def get(b: MyBoard): String =
@@ -17,9 +17,11 @@ class MySolver extends Solver[MyBoard] {
   private def attack(b: MyBoard): Action = {
     val currentPoint = b.getMyBomberman
     findsNearestAvailableBomberman(b).map { victim ⇒
-      val putBomb = b.getEuclideanDistanceToPoint(currentPoint, victim) < MIN_DIST_TO_VICTIM
       val nextMoveTowardsVictim = b.nextMoveToPoint(currentPoint, victim, false).get
       val nextPointTowardsVictim = Helpers.movePoint(nextMoveTowardsVictim, currentPoint)
+      val putBomb =
+        b.getEuclideanDistanceToPoint(currentPoint, victim) < MIN_DIST_TO_VICTIM &&
+        b.getFutureBlasts2(nextPointTowardsVictim).contains(victim)
       if (shouldNotGoThere(b, nextPointTowardsVictim)) {
         debug("escapeIfNeeded")
         escapeIfNeeded(b)
@@ -45,19 +47,23 @@ class MySolver extends Solver[MyBoard] {
     val x = currentPoint.getX
     val y = currentPoint.getY
     if (futureBlasts.contains(currentPoint)) {
-      val direction = (for {
+      val points = (for {
         xToCheck ← x - 2 to x + 2
         yToCheck ← y - 2 to y + 2
       } yield {
         val point = PointImpl.pt(xToCheck, yToCheck)
         val canGoThere = !futureBlasts.contains(point) && !impassable.contains(point)
         if (canGoThere) {
-          b.nextMoveToPoint(currentPoint, point, true)
+          Some(point)
         } else {
           None
         }
-      }).flatten.headOption
-      Action(direction.map(x ⇒ toMove(x)) .getOrElse(Stay), NoBomb)
+      }).flatten
+        val direction = points
+        .find(p ⇒ b.nextMoveToPoint(currentPoint, p, true).isDefined)
+        .flatMap(p ⇒ b.nextMoveToPoint(currentPoint, p, true))
+
+      Action(direction.map(x ⇒ toMove(x)).getOrElse(Stay), NoBomb)
     } else
       Action(Stay, NoBomb)
   }

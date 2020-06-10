@@ -86,6 +86,9 @@ class MyBoard extends AbstractBoard[Elements] {
   def getFutureBlasts(bomb: Point): Set[Point] =
     addPointNeighbours(bomb) ++ Set(bomb)
 
+  def getFutureBlasts2(bomb: Point): Set[Point] =
+    addPointNeighbours(bomb) ++ Set(bomb)
+
   def getBlastWithBombAndTimer: Seq[BombWithBlasts] = getBombs.map(b => BombWithBlasts(b, addPointNeighbours(b), getAt(b).ch() - '0')).toSeq
 
   def getEuclideanDistanceToPoint(from: Point, to: Point): Int =
