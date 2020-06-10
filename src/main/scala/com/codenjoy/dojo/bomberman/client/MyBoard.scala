@@ -14,9 +14,13 @@ class MyBoard extends AbstractBoard[Elements] {
 
   import Helpers._
 
-  def isBarrierAt(x: Int, y: Int): Boolean = getImpassableBlocks.contains(pt(x, y))
+  def isBarrierAt(x: Int, y: Int, avoidBombermans: Boolean): Boolean =
+    if (avoidBombermans)
+      getImpassable.contains(pt(x, y))
+    else
+      getImpassableBlocks.contains(pt(x, y))
 
-  def isBarrierAt(point: Point): Boolean = isBarrierAt(point.getX, point.getY)
+  def isBarrierAt(point: Point, avoidBombermans: Boolean): Boolean = isBarrierAt(point.getX, point.getY, avoidBombermans)
 
   override def valueOf(c: Char): Elements = Elements.valueOf(c)
 
@@ -97,9 +101,9 @@ class MyBoard extends AbstractBoard[Elements] {
     case a@_ => Some(a.minBy(getEuclideanDistanceToPoint(from, _)))
   }
 
-  def nextMoveToPoint(from: Point, to: Point): Option[Direction] = closestPathToPoint(from, to).flatMap(_.headOption)
+  def nextMoveToPoint(from: Point, to: Point, avoidBombermans: Boolean): Option[Direction] = closestPathToPoint(from, to, avoidBombermans).flatMap(_.headOption)
 
-  def closestPathToPoint(from: Point, to: Point): Option[Seq[Direction]] = {
+  def closestPathToPoint(from: Point, to: Point, avoidBombermans: Boolean): Option[Seq[Direction]] = {
     def tooFarFromPoint(from: Point, to: Point, point: Point): Boolean = {
       val fromX = from.getX
       val fromY = from.getY
@@ -126,7 +130,9 @@ class MyBoard extends AbstractBoard[Elements] {
           pt(newX, newY) -> direction
         })
         newPoints
-          .filter(newPoint => !isBarrierAt(newPoint._1) && !visited.contains(newPoint._1) && !tooFarFromPoint(from, to, newPoint._1))
+          .filter(newPoint =>
+            !isBarrierAt(newPoint._1, avoidBombermans) &&
+            !visited.contains(newPoint._1) && !tooFarFromPoint(from, to, newPoint._1))
           .foreach(point => {
             queue = queue.:+(point._1 -> (currentDirections ++ Seq(point._2)))
             visited ++= Set(point._1)
