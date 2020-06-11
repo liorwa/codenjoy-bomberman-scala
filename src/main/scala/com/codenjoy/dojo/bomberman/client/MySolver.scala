@@ -19,9 +19,10 @@ class MySolver extends Solver[MyBoard] {
     findsNearestAvailableBomberman(b).map { victim ⇒
       val nextMoveTowardsVictim = b.nextMoveToPoint(currentPoint, victim, false).get
       val nextPointTowardsVictim = Helpers.movePoint(nextMoveTowardsVictim, currentPoint)
+      val distToVictim = b.getEuclideanDistanceToPoint(currentPoint, victim)
       val putBomb =
-        b.getEuclideanDistanceToPoint(currentPoint, victim) < MIN_DIST_TO_VICTIM &&
-        b.getFutureBlasts2(nextPointTowardsVictim).contains(victim)
+        canKill(b, victim, nextPointTowardsVictim, distToVictim) ||
+        distToVictim > 5
       if (shouldNotGoThere(b, nextPointTowardsVictim)) {
         debug("escapeIfNeeded")
         escapeIfNeeded(b)
@@ -33,6 +34,11 @@ class MySolver extends Solver[MyBoard] {
       debug("Suicide")
       Action(Stay, BombBeforeMove)
     }
+  }
+
+  private def canKill(b: MyBoard, victim: Point, nextPointTowardsVictim: Point, distToVictim: Int) = {
+    distToVictim < MIN_DIST_TO_VICTIM &&
+      b.getFutureBlasts2(nextPointTowardsVictim).contains(victim)
   }
 
   private def shouldNotGoThere(b: MyBoard, point: Point) =
